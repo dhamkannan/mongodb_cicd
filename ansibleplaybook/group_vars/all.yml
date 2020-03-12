@@ -1,0 +1,10 @@
+---
+proxy_env:
+  http_proxy: http://proxysrv:8080
+  https_proxy: https://proxysrv:8080
+mongo_version: 4.2.0
+replicaset: rs-test
+mongod_port: 27017
+datadir: /mongodata
+repo_url: http://jenkins/repo/mongodb
+rollback: 'yes'

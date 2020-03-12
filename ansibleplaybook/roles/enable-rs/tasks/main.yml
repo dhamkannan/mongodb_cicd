@@ -1,0 +1,14 @@
+---
+- name: Copy mongod replica set initialization script
+  template: 
+   src: enable_replicaset.js.j2
+   dest: /tmp/enable_replicaset.js
+  notify: 
+   - enable replicaset
+   - create mongodb admin user
+
+- name: Force handlers to run now
+  meta: flush_handlers
+
+
+

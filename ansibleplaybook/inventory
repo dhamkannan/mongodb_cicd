@@ -1,0 +1,11 @@
+[mongod]
+mongo1
+mongo2
+mongo3
+
+[rsPrimary]
+mongo1
+
+[rsSecondary]
+mongo2
+mongo3

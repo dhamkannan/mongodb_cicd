@@ -1,0 +1,16 @@
+node {
+    checkout scm
+
+    stage ('Setup MongoDB'){
+        sh 'ansible-playbook site.yml --tags install-mongodb --extra-vars "@vaults/secrets.yml" --vault-password-file ./vaults/.vaultpass'
+    }
+    
+    stage ('Configure MongoDB'){
+        sh 'ansible-playbook site.yml --tags enable-rs --extra-vars "@vaults/secrets.yml" --vault-password-file ./vaults/.vaultpass'
+        sh 'ansible-playbook site.yml --tags enable-auth --extra-vars "@vaults/secrets.yml" --vault-password-file ./vaults/.vaultpass'
+    }
+
+    stage ('Validate MongoDB'){
+        sh 'ansible-playbook site.yml --tags validate-mongodb --extra-vars "@vaults/secrets.yml" --vault-password-file ./vaults/.vaultpass'
+    }
+}

@@ -1,0 +1,125 @@
+---
+# This role deploys the mongod processes and sets up the replication set.
+- name: Create the mongod user
+  user: 
+   name: mongod
+   comment: "MongoD"
+
+- name: Create sudo file for mongod
+  file: 
+   path: /etc/sudoers.d/mongod
+   state: touch
+   owner: root
+   group: root
+   mode: '0644'
+   # modification_time: preserve
+   # access_time: preserve
+
+- name: Edit sudo file of mongod
+  copy:
+   content: "mongod  ALL=(ALL) NOPASSWD:ALL"
+   dest: /etc/sudoers.d/mongod
+
+- name: Create the data directory
+  file: 
+   path: "{{ datadir }}/mongo"
+   owner: mongod
+   group: mongod
+   state: directory
+   mode: '0750'
+
+- name: Create the mongodb log directory
+  file: 
+   path: "{{ datadir }}/log/mongodb"
+   owner: mongod
+   group: mongod
+   state: directory
+   mode: '0750'
+
+- name: Create the audit log directory
+  file: 
+   path: "{{ datadir }}/log/audit"
+   owner: mongod
+   group: mongod
+   state: directory
+   mode: '0750'
+
+- name: Create the audit log directory
+  file: 
+   path: "{{ datadir }}/certs"
+   owner: mongod
+   group: mongod
+   state: directory
+   mode: '0750'
+
+- name: Install the pymongo package
+  pip:
+   name: pymongo
+  environment: "{{ proxy_env }}"
+
+- name: Check if Service Exists
+  shell: mongod --version | head -n 1 | awk '{print $3}' | sed 's/^.//'
+  register: mongod_version
+
+- name: Create the repository for mongodb
+  template: 
+   src: mongodb-org.repo.j2
+   dest: /etc/yum.repos.d/mongodb-org.repo
+
+- name: Copy certificates to servers
+  copy: 
+   src: certs
+   dest: /data/
+   owner: mongod
+   group: mongod
+   mode: '0400'
+
+- name: Check if Service Exists
+  stat: path=/etc/init.d/mongod
+  register: mongod_status
+
+- name: Check if Service Exists
+  shell: mongod --version | head -n 1 | awk '{print $3}' | sed 's/^.//'
+  register: mongod_version
+
+- name: Install the mongodb package
+  yum:
+   name: ['mongodb-org-server-{{mongo_version }}', 'mongodb-org-shell-{{ mongo_version }}', 'mongodb-org-mongos-{{ mongo_version }}', 'mongodb-org-tools-{{ mongo_version }}']
+   state: installed
+  environment: "{{ proxy_env }}"
+  notify: Update mongod.conf file
+  when: mongod_status.stat.exists == false
+
+- name: Run handlers immediately
+  meta: flush_handlers
+
+- name: Create the repository for mongodb
+  template: 
+   src: repstatus.py.j2
+   dest: /tmp/repstatus.py
+
+- name: Ensure all Replicas are InSync
+  shell: python /tmp/repstatus.py
+  register: rep_status
+  when: mongod_status.stat.exists
+
+- name: Stop MongoDB service for Upgrade / Downgrade
+  service:
+   name: mongod
+   state: stopped
+  when: mongo_version != mongod_version.stdout
+
+- name: Upgrade/downgrade the mongodb package
+  yum:
+   name: ['mongodb-org-server-{{mongo_version }}', 'mongodb-org-shell-{{ mongo_version }}', 'mongodb-org-mongos-{{ mongo_version }}', 'mongodb-org-tools-{{ mongo_version }}']
+   state: installed
+   allow_downgrade: "{{ rollback | default('no') }}"
+  environment: "{{ proxy_env }}"
+  when: mongo_version != mongod_version.stdout
+  notify: Pause Play
+
+- name: Start MongoDB service
+  service:
+   name: mongod
+   state: started
+   enabled: yes

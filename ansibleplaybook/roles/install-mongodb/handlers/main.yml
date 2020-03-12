@@ -1,0 +1,9 @@
+---
+- name: Update mongod.conf file
+  template:
+   src: mongod.conf.j2
+   dest: /etc/mongod.conf
+
+- name: Pause Play
+  pause:
+   seconds: 5

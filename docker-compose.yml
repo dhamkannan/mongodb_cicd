@@ -1,0 +1,93 @@
+version: '3'
+services:  
+  mongo1:
+    image: centos:base
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup
+    environment:
+      container: docker
+    networks: 
+      - mongonetwork
+    privileged: true
+    tty: true
+    stdin_open: true
+    hostname: mongo1
+    container_name: mongo1
+    command: ["/usr/sbin/init"]
+
+  mongo2:
+    image: centos:base
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup
+    environment:
+      container: docker
+    networks: 
+      - mongonetwork
+    privileged: true
+    tty: true
+    stdin_open: true
+    hostname: mongo2
+    container_name: mongo2
+    command: ["/usr/sbin/init"]
+
+  mongo3:
+    image: centos:base
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup
+    environment:
+      container: docker
+    networks: 
+      - mongonetwork
+    privileged: true
+    tty: true
+    stdin_open: true
+    hostname: mongo3
+    container_name: mongo3
+    command: ["/usr/sbin/init"]
+  
+  jenkins:
+    image: jenkins:latest
+    ports:
+      - 8081:80
+      - 8080:8080
+      - 50000:50000
+    volumes:
+      - jenkins_home:/var/jenkins_home
+    networks: 
+      - mongonetwork
+    hostname: jenkins
+    container_name: jenkins
+
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    ports:
+      - 8443:443
+      - 8082:80
+    volumes:
+      - gitlab_config:/etc/gitlab
+      - gitlab_logs:/var/log/gitlab
+      - gitlab_data:/var/opt/gitlab
+    networks: 
+      - mongonetwork
+    hostname: gitlab
+    container_name: gitlab
+    restart: unless-stopped
+
+networks:
+  mongonetwork:
+    external:
+      name: mongonetwork
+
+volumes:
+  jenkins_home:
+    external:
+      name: jenkins_home
+  gitlab_config:
+    external:
+      name: gitlab_config
+  gitlab_logs:
+    external:
+      name: gitlab_logs
+  gitlab_data:
+    external:
+      name: gitlab_data

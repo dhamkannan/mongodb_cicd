@@ -1,0 +1,18 @@
+---
+# Handler for enabling replicaset
+
+- name: enable replicaset
+  shell: /usr/bin/mongo --port {{ mongod_port }} --host {{ inventory_hostname }} --ssl --sslCAFile /data/certs/rootCA.pem --sslPEMKeyFile /data/certs/{{ inventory_hostname }}.pem /tmp/enable_replicaset.js
+
+
+- name: create mongodb admin user
+  mongodb_user:
+   login_host: "mongodb://{{ inventory_hostname }}:{{ mongod_port }}/?ssl=true&ssl_ca_certs=/data/certs/rootCA.pem&ssl_certfile=/data/certs/{{ inventory_hostname }}.pem" 
+   ssl: True
+   ssl_cert_reqs: CERT_REQUIRED
+   database: admin
+   name: "{{ mongo_adminuser }}"
+   password: "{{ mongo_adminpassword }}"
+   state: present
+   replica_set: "{{ replicaset }}"
+   roles: userAdminAnyDatabase,dbAdminAnyDatabase,readWriteAnyDatabase,clusterAdmin

@@ -1,0 +1,4 @@
+http_proxy=http://proxysrv:8080
+https_proxy=https://proxysrv:8080
+ftp_proxy="ftp://proxysrv:8080/"
+no_proxy=.mylan.local,.domain1.com,host1,host2,*.mongonetwork,control, gitlab, jenkins

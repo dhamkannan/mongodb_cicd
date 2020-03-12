@@ -1,0 +1,4 @@
+---
+- name: Ensure all Replicas are InSync
+  shell: python /tmp/repstatus.py
+  register: rep_status

@@ -1,0 +1,33 @@
+---
+- name: Run base tasks
+  hosts: all
+  roles:
+    - install-mongodb
+  gather_facts: false
+  become: true
+  serial: 1
+  tags: install-mongodb
+
+- name: Enable replica set
+  hosts: rsPrimary
+  roles:
+  - enable-rs
+  gather_facts: false
+  become: true
+  tags: enable-rs
+
+- name: Enable encryption at rest
+  hosts: all
+  roles:
+  - enable-auth
+  gather_facts: false
+  become: true
+  tags: enable-auth
+
+- name: Validate MongoDB
+  hosts: rsPrimary
+  roles:
+    - validate-mongodb
+  gather_facts: false
+  become: true
+  tags: validate-mongodb

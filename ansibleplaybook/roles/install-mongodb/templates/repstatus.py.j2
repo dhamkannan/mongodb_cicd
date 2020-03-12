@@ -1,0 +1,51 @@
+import time
+from pymongo import MongoClient 
+from pymongo.database import Database
+
+# Connect MongoDB client
+# uri = "mongodb://mongoadmin:mongoadmin@mongo1:27017/?ssl=true&ssl_ca_certs=/data/certs/rootCA.pem&ssl_certfile=/data/certs/mongo1.pem"
+uri = "mongodb://{{ mongo_adminuser }}:{{ mongo_adminpassword }}@{{ inventory_hostname }}:{{ mongod_port }}/?ssl=true&ssl_ca_certs=/data/certs/rootCA.pem&ssl_certfile=/data/certs/{{ inventory_hostname }}.pem"
+client = MongoClient(uri)
+
+# Connect to Admin database
+db = Database(client, 'admin')
+
+# Get all the Secondary nodes
+nodes = []
+rs_stats = db.command({'replSetGetStatus'  :1})
+for member in rs_stats['members'] : 
+    if member['stateStr'] == 'SECONDARY':
+        nodes.append(member['name'])
+
+# Get replication lag status
+def get_repstatus(db, node):
+    status = 'NotInSync'
+    timeout = time.time() + 10
+
+    while status not in ['InSync', 'Timeout']:
+        # Get point in time replica status
+        rs_stats = db.command({'replSetGetStatus'  :1})
+
+        # Get Primary node optime
+        for member in rs_stats['members'] : 
+            if member['stateStr'] == 'PRIMARY' : 
+                primary_optime = member['optimeDate']
+
+        for member in rs_stats['members'] : 
+            if member['name'] == node:
+                secondary_optime = member['optimeDate']
+                if primary_optime == secondary_optime:
+                    status = 'InSync'
+                elif timeout < time.time():
+                    status = 'Timeout'
+                time.sleep(5)
+                print(node, status)
+
+    if status == 'Timeout':
+        raise Exception(node + ' is not InSync and Timed out')
+    
+    return True
+
+for node in nodes:
+    get_repstatus(db, node)
+print(True)
